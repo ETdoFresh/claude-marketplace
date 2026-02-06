@@ -1,0 +1,20 @@
+{
+  "name": "etgarcia-marketplace",
+  "owner": {
+    "name": "etgarcia"
+  },
+  "metadata": {
+    "description": "Skills, Agents, and Agent Swarms by etgarcia",
+    "version": "1.0.0",
+    "pluginRoot": "./plugins"
+  },
+  "plugins": [
+    {
+      "name": "project-runner",
+      "source": "./plugins/project-runner",
+      "description": "Full project lifecycle orchestration — from request to 100% completion using agent swarms",
+      "category": "orchestration",
+      "tags": ["project", "swarm", "orchestration", "implementation", "agents"]
+    }
+  ]
+}

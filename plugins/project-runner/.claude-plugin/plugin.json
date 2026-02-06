@@ -1,0 +1,10 @@
+{
+  "name": "project-runner",
+  "description": "Full project lifecycle orchestration — from request to 100% completion using agent swarms",
+  "version": "1.0.0",
+  "author": {
+    "name": "etgarcia"
+  },
+  "keywords": ["project", "swarm", "orchestration", "implementation", "agents"],
+  "license": "MIT"
+}
