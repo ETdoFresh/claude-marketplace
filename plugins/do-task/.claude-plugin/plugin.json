@@ -1,0 +1,8 @@
+{
+  "name": "do-task",
+  "description": "Execute a task through plan, implement, evaluate phases with automatic retry until completion",
+  "version": "1.0.0",
+  "author": { "name": "etgarcia" },
+  "keywords": ["task", "implementation", "evaluation", "retry"],
+  "license": "MIT"
+}

@@ -1,0 +1,8 @@
+{
+  "name": "gh",
+  "description": "Comprehensive GitHub CLI (gh) reference — PRs, issues, repos, releases, workflows, API recipes, and more",
+  "version": "1.0.0",
+  "author": { "name": "etgarcia" },
+  "keywords": ["github", "gh", "cli", "reference", "api"],
+  "license": "MIT"
+}

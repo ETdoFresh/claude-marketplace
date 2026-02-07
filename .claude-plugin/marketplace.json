@@ -15,6 +15,27 @@
       "description": "Full project lifecycle orchestration — from request to 100% completion using agent swarms",
       "category": "orchestration",
       "tags": ["project", "swarm", "orchestration", "implementation", "agents"]
+    },
+    {
+      "name": "build-project",
+      "source": "./plugins/build-project",
+      "description": "Full project lifecycle — interview, plan milestones, generate tasks, execute with verification until 100% complete",
+      "category": "orchestration",
+      "tags": ["project", "lifecycle", "milestones", "tasks", "orchestration"]
+    },
+    {
+      "name": "do-task",
+      "source": "./plugins/do-task",
+      "description": "Execute a task through plan, implement, evaluate phases with automatic retry until completion",
+      "category": "tasks",
+      "tags": ["task", "implementation", "evaluation", "retry"]
+    },
+    {
+      "name": "gh",
+      "source": "./plugins/gh",
+      "description": "Comprehensive GitHub CLI (gh) reference — PRs, issues, repos, releases, workflows, API recipes, and more",
+      "category": "skills",
+      "tags": ["github", "gh", "cli", "reference", "api"]
     }
   ]
 }

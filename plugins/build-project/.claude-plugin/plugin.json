@@ -1,0 +1,8 @@
+{
+  "name": "build-project",
+  "description": "Full project lifecycle — interview, plan, milestones, tasks, implement with verification until 100% complete",
+  "version": "1.0.0",
+  "author": { "name": "etgarcia" },
+  "keywords": ["project", "lifecycle", "milestones", "tasks", "orchestration"],
+  "license": "MIT"
+}
