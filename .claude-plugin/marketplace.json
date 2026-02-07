@@ -36,6 +36,13 @@
       "description": "Comprehensive GitHub CLI (gh) reference — PRs, issues, repos, releases, workflows, API recipes, and more",
       "category": "skills",
       "tags": ["github", "gh", "cli", "reference", "api"]
+    },
+    {
+      "name": "local-web-fetch",
+      "source": "./plugins/local-web-fetch",
+      "description": "Fetch a website's content locally using Node.js and convert it to clean, readable Markdown with optional CSS selectors",
+      "category": "skills",
+      "tags": ["web", "fetch", "scrape", "markdown", "html"]
     }
   ]
 }

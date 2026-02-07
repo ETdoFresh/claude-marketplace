@@ -1,0 +1,8 @@
+{
+  "name": "local-web-fetch",
+  "description": "Fetch a website's content locally using Node.js and convert it to clean, readable Markdown. Supports CSS selectors to target specific page sections.",
+  "version": "1.0.0",
+  "author": { "name": "etgarcia" },
+  "keywords": ["web", "fetch", "scrape", "markdown", "html"],
+  "license": "MIT"
+}
