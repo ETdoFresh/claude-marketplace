@@ -1,18 +1,20 @@
 ---
-name: project-implement
+name: project-implement:no-interview
 description: >
-  Start a new project from a request — explores, interviews, plans, creates milestones, and
-  implements with agent swarms. Use this skill whenever the user wants to build something from
-  scratch, implement a feature end-to-end, or kick off a multi-phase project. Triggers on phrases
-  like "build me...", "implement...", "create a project for...", "start a new project", or any
-  substantial implementation request that would benefit from structured orchestration.
+  Same as project-implement but skips the interactive interview — auto-selects recommended
+  answers for all interview questions. Use when the user wants to run the full project workflow
+  without being asked clarifying questions. The interview file is still generated with
+  auto-selected answers so downstream agents have context. Triggers on "no-interview",
+  "skip interview", "just build it", or when the user wants a hands-off implementation run.
 disable-model-invocation: true
 ---
 
-# Project Runner: Full Implementation Orchestration
+# Project Runner: No-Interview Mode
 
-You are now operating as the **Project Runner Orchestrator**. You will take the user's request
-and drive it from zero to 100% complete through a multi-phase workflow using specialized agents.
+This skill runs the exact same workflow as `project-implement`, but with the interview phase
+set to auto-select mode. The interviewer agent will still generate questions and pick the
+best recommended answer for each one, writing a full interview transcript — but it won't
+prompt the user for input.
 
 The user's request: **"$ARGUMENTS"**
 
@@ -53,18 +55,21 @@ Create the project workspace. Do this directly (no agent needed).
    ## Progress
    - [x] Phase 1: Project Setup
    - [ ] Phase 2: Exploration
-   - [ ] Phase 3: Interview
+   - [ ] Phase 3: Interview (auto-select)
    - [ ] Phase 4: Planning
    - [ ] Phase 5: Milestone Creation
    - [ ] Phase 6: Milestone Verification
    - [ ] Phase 7: Task Creation
    - [ ] Phase 8-10: Implementation Swarm
 
+   ## Interview Mode
+   auto-select (no user interaction)
+
    ## Project Path
    projects/NNN-slug/
    ```
 
-6. **Tell the user** the project has been created and what happens next.
+6. **Tell the user** the project has been created in no-interview mode and what happens next.
 
 **IMPORTANT — Resumability:** Before creating a new project, check if the user is referencing
 an existing project. If `status.md` exists in a project folder and shows an incomplete phase,
@@ -93,36 +98,38 @@ Launch the **pr-explorer** agent to explore the repository.
 
 3. Update `status.md`: mark Phase 2 complete, set current phase to "interview".
 
-4. Tell the user: "Exploration complete. Starting requirements interview..."
+4. Tell the user: "Exploration complete. Auto-selecting interview answers..."
 
 ---
 
-## PHASE 3: Interview
+## PHASE 3: Interview (Auto-Select)
 
-Launch the **pr-interviewer** agent as a **FOREGROUND** agent (it needs AskUserQuestion).
+Launch the **pr-interviewer** agent with `no-interview: true`. This still runs as a
+**FOREGROUND** agent since it needs to write files, but it will NOT prompt the user.
 
 1. Use the Task tool to spawn the **pr-interviewer** agent as a foreground agent with this prompt:
    ```
    You are the interview agent for a project-runner workflow.
 
+   no-interview: true
+
    Project folder: projects/NNN-slug/
    Read the request from: projects/NNN-slug/request.md
    Read the findings from: projects/NNN-slug/initial-findings.md
 
-   Conduct a thorough requirements interview with the user. Write the transcript to:
-   projects/NNN-slug/interview.md
+   AUTO-SELECT MODE: Do NOT use AskUserQuestion. Instead, generate all interview questions
+   as you normally would, then select the recommended answer for each one yourself.
+   Write the full transcript to: projects/NNN-slug/interview.md
 
-   IMPORTANT: Batch your questions in groups of 4 using a single AskUserQuestion call per
-   batch. Plan 8-16 questions total, then send them 4 at a time. Adapt between batches
-   based on the user's answers. Every question must include "Skip this question" and
-   "Stop interview" options. Mark one option per question as "(Recommended)".
+   Follow your interview protocol but auto-select the recommended option for every question.
+   Mark each answer with [auto-selected] in the transcript.
    ```
 
 2. Wait for the interviewer to complete.
 
 3. Update `status.md`: mark Phase 3 complete, set current phase to "planning".
 
-4. Tell the user: "Interview complete. Creating the high-level plan..."
+4. Tell the user: "Interview auto-completed. Creating the high-level plan..."
 
 ---
 
@@ -142,6 +149,10 @@ Launch the **pr-planner** agent to create the strategic plan.
 
    Create a comprehensive high-level plan and write it to:
    projects/NNN-slug/plan.md
+
+   Note: The interview was conducted in auto-select mode — answers were chosen by the
+   interviewer agent, not the user. Use them as reasonable defaults but be aware the user
+   may have different preferences for some decisions.
 
    Include: architecture, technology decisions, component breakdown, data model,
    testing strategy, deployment approach. Do NOT create milestones or tasks yet.
