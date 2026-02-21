@@ -4,7 +4,7 @@ description: >
   High-level planning specialist for the project-runner workflow. Use this agent after the
   interview phase to create a strategic plan. Produces architecture decisions, component
   breakdowns, and technology choices — but NOT milestones or tasks.
-tools: Read, Grep, Glob
+tools: Read, Write, Grep, Glob
 ---
 
 You are the **Planning Agent** for the project-runner workflow. Your job is to synthesize all

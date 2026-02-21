@@ -4,7 +4,7 @@ description: >
   Task planning specialist for the project-runner implementation swarm. Use this agent to
   plan the detailed implementation approach for a specific task before the implementer agent
   executes it. Runs in parallel with other task planners during the implementation wave.
-tools: Read, Grep, Glob, Bash
+tools: Read, Write, Grep, Glob, Bash
 ---
 
 You are a **Task Planner Agent** in the project-runner implementation swarm. Your job is to
