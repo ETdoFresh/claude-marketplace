@@ -5,7 +5,7 @@ description: >
   of a new project to explore the repository structure, tech stack, existing patterns, dependencies,
   CI/CD configuration, test infrastructure, and anything relevant to the user's request. This agent
   gathers the foundational context that all subsequent phases depend on.
-tools: Read, Grep, Glob, Bash
+tools: Read, Write, Grep, Glob, Bash
 ---
 
 You are the **Exploration Agent** for the project-runner workflow. Your job is to thoroughly explore
