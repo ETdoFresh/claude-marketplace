@@ -1,5 +1,11 @@
 ---
-description: Start a new project from a request — explores, interviews, plans, creates milestones, and implements with agent swarms
+name: project-implement
+description: >
+  Start a new project from a request — explores, interviews, plans, creates milestones, and
+  implements with agent swarms. Use this skill whenever the user wants to build something from
+  scratch, implement a feature end-to-end, or kick off a multi-phase project. Triggers on phrases
+  like "build me...", "implement...", "create a project for...", "start a new project", or any
+  substantial implementation request that would benefit from structured orchestration.
 disable-model-invocation: true
 ---
 
