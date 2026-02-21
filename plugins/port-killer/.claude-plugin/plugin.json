@@ -1,0 +1,8 @@
+{
+  "name": "port-killer",
+  "description": "Find and kill processes listening on specific network ports. Cross-platform support for Windows, macOS, and Linux.",
+  "version": "1.0.0",
+  "author": { "name": "etgarcia" },
+  "keywords": ["port", "kill", "process", "network", "pid"],
+  "license": "MIT"
+}

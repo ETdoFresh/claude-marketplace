@@ -43,6 +43,13 @@
       "description": "Fetch a website's content locally using Node.js and convert it to clean, readable Markdown with optional CSS selectors",
       "category": "skills",
       "tags": ["web", "fetch", "scrape", "markdown", "html"]
+    },
+    {
+      "name": "port-killer",
+      "source": "./plugins/port-killer",
+      "description": "Find and kill processes listening on specific network ports — cross-platform support for Windows, macOS, and Linux",
+      "category": "skills",
+      "tags": ["port", "kill", "process", "network", "pid", "utility"]
     }
   ]
 }
