@@ -50,6 +50,13 @@
       "description": "Find and kill processes listening on specific network ports — cross-platform support for Windows, macOS, and Linux",
       "category": "skills",
       "tags": ["port", "kill", "process", "network", "pid", "utility"]
+    },
+    {
+      "name": "port-application",
+      "source": "./plugins/port-application",
+      "description": "Port source code from one language to another using a structured pipeline — inventory, translate, evaluate, and iteratively fix until 100% accuracy",
+      "category": "orchestration",
+      "tags": ["port", "translate", "migrate", "language", "code", "conversion", "porting"]
     }
   ]
 }
