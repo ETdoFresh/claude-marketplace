@@ -1,0 +1,8 @@
+{
+  "name": "port-application",
+  "description": "Port source code from one programming language to another using a structured pipeline: inventory, translate, evaluate, and iteratively fix until 100% accuracy. Supports any language pair.",
+  "version": "1.0.0",
+  "author": { "name": "etgarcia" },
+  "keywords": ["port", "translate", "migrate", "language", "code", "conversion", "porting"],
+  "license": "MIT"
+}
