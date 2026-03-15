@@ -22,22 +22,62 @@ until every file scores 100%.
 The methodology prioritizes **accuracy over elegance** — an ugly-but-faithful port beats
 a clean-but-wrong one. The original source code is always the single source of truth.
 
-## CRITICAL: Autonomous Execution
+## CRITICAL: Autonomous Execution — HARD CONSTRAINT
 
-This pipeline runs **autonomously to completion**. After Phase 0 (user interview), do NOT
-stop, pause, or ask the user for permission between phases. The full sequence is:
+This pipeline runs **autonomously to completion**. After Phase 0 (user interview), the
+pipeline is a single uninterruptible operation. You MUST NOT stop, pause, present results,
+or ask the user anything until every file scores 100% and final reports are generated.
 
-1. Phase 0: Discovery & Configuration (only phase with user interaction)
+The full sequence is one continuous execution:
+
+1. Phase 0: Discovery & Configuration (ONLY phase with user interaction)
 2. Phase 1: Port ALL file groups
 3. Phase 2: Evaluate ALL ported files
 4. Phase 3: Fix any files scoring < 100, then loop back to Phase 2
 5. Repeat Phase 2→3 until every file hits 100%
 6. Generate final reports (markdown + HTML)
+7. ONLY NOW present results to the user
 
-**Do NOT ask "shall I proceed?" or "should I continue?" between phases.** The pipeline
-is designed to run unattended. If you finish porting, immediately start evaluating. If
-evaluation reveals issues, immediately start fixing. Keep going until every file scores
-100%. There is no retry limit — keep iterating until the file is perfect.
+### Self-Check Gate
+
+**Before generating ANY text output after a phase completes, ask yourself:**
+> "Am I about to end my turn, ask a question, or present a summary as if the work is done?"
+> If YES → **STOP. Do not output that text.** Instead, immediately begin the next phase.
+
+Phase completions are **transitions**, not conclusions. Print a one-line status and
+immediately spawn the next subagent. Never print a summary table or completion message
+that treats a phase as a stopping point.
+
+### Anti-Pattern — DO NOT DO THIS
+
+The following is an example of **exactly the wrong behavior** that has occurred in past runs.
+Do NOT produce output like this:
+
+```
+❌ WRONG — This is what you must NEVER do:
+
+Phase 1 (Port) Complete!
+[big summary table]
+Would you like me to proceed to Phase 2 (Evaluate)?
+```
+
+This is wrong because it treats Phase 1 completion as a stopping point. The correct behavior is:
+
+```
+✅ CORRECT — This is what you must do:
+
+Phase 1 complete — 32 files ported. Starting Phase 2 (Evaluate), launching auditor for Group 1...
+[immediately spawn auditor subagent — no pause, no question, no waiting]
+```
+
+### The Rule
+
+**After Phase 0, your next message to the user may ONLY be the final report.** Between
+phases, you may print brief one-line transition status updates, but you must NEVER:
+- Ask "shall I proceed?", "should I continue?", "would you like me to..."
+- Present a summary table as if the work is complete
+- End your turn without immediately starting the next phase
+- Treat any phase completion as a natural stopping point
 
 ## Setup
 
@@ -159,17 +199,18 @@ For each file group, spawn a **pa-porter** subagent:
 >
 > **Working directory**: {cwd}
 
-After the porter finishes:
-- Verify the ported files exist at {PORT_PATH}
-- Read the inventory checklist
-- Print a brief summary: files created, function count, confidence levels
-- **Immediately proceed to Phase 2 — do not wait or ask the user**
+After the porter finishes — **immediately start Phase 2** (this is not optional):
+1. Verify the ported files exist at {PORT_PATH}
+2. Read the inventory checklist
+3. Print a ONE-LINE transition: "Group N ported (X files). Starting evaluation..."
+4. **Spawn the auditor subagent in the same turn** — do NOT end your turn here
 
 ---
 
-## Phase 2 — Evaluate (per file group)
+## Phase 2 — Evaluate (per file group) — NO PAUSE BEFORE THIS
 
-Proceed immediately after Phase 1 completes. Do not pause.
+You must arrive here directly from Phase 1 in the same turn. If you are reading this
+after completing Phase 1, you should already be spawning the auditor — not asking the user.
 
 Spawn a **pa-auditor** subagent:
 
@@ -193,10 +234,11 @@ Spawn a **pa-auditor** subagent:
 >
 > **Working directory**: {cwd}
 
-After the auditor finishes:
-- Read the evaluation JSON
-- Extract scores and issue lists
-- Print summary: per-file scores, critical issues found
+After the auditor finishes — **immediately apply the Decision Gate** (do not stop):
+1. Read the evaluation JSON
+2. Extract scores and issue lists
+3. Print a ONE-LINE status: "Group N scored X%. [Accepted | Proceeding to fix...]"
+4. Apply the Decision Gate below — spawn the fixer or move to next group **in the same turn**
 
 ### Decision Gate
 
@@ -240,11 +282,12 @@ Spawn a **pa-fixer** subagent:
 >
 > **Working directory**: {cwd}
 
-After the fixer finishes:
-- Verify the corrected files exist
-- Read the self-audit score
-- Check for recurring issues (same issue in 2+ consecutive iterations)
-- **Immediately loop back to Phase 2** with the corrected files — do not pause or ask
+After the fixer finishes — **immediately loop back to Phase 2** (do not stop):
+1. Verify the corrected files exist
+2. Read the self-audit score
+3. Check for recurring issues (same issue in 2+ consecutive iterations)
+4. Print a ONE-LINE status: "Fix iteration N complete (self-audit: X%). Re-evaluating..."
+5. **Spawn the auditor subagent in the same turn** — do NOT end your turn here
 
 ---
 
@@ -395,9 +438,11 @@ For uncommon pairs, generate the mapping by:
 
 ## Important Notes
 
-- **NEVER stop to ask the user between phases.** After Phase 0, the entire pipeline
-  runs autonomously. The only stopping condition is: all files at 100%.
-  Then generate final reports and finish. There is no retry limit.
+- **AUTONOMOUS EXECUTION IS A HARD CONSTRAINT.** After Phase 0, the pipeline runs to
+  completion without any user interaction. The ONLY time you present results to the user
+  is after all files score 100% and the final report is generated. If you find yourself
+  about to ask the user a question or present a phase summary, you are violating this
+  constraint — immediately start the next phase instead.
 - Each subagent runs in its own context. Pass ALL necessary information (file contents,
   config, evaluation reports) directly in the delegation prompt.
 - Use named subagents: **pa-porter**, **pa-auditor**, **pa-fixer**.
@@ -411,6 +456,7 @@ For uncommon pairs, generate the mapping by:
 - No retry limit. Keep iterating until 100% score.
 - When porting related files (header + implementation), port them together.
 - If a subagent encounters an error, report it and attempt to recover.
+- **REMINDER: Phase completion = immediately start next phase. Not a stopping point.**
 
 ## Reference Files
 
