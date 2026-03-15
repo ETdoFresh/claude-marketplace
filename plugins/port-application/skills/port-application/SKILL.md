@@ -151,6 +151,8 @@ Write `port-results/<slug>/request.md`:
 - **Port Path**: {PORT_PATH}
 - **Target Framework**: {TARGET_FRAMEWORK}
 - **Platform Layer**: {PLATFORM_LAYER}
+- **Build Command**: {BUILD_COMMAND}
+- **Run Command**: {RUN_COMMAND or "N/A"}
 
 ## Source Files
 {FILE_LIST with file sizes}
@@ -234,11 +236,46 @@ Spawn a **pa-auditor** subagent:
 >
 > **Working directory**: {cwd}
 
-After the auditor finishes — **immediately apply the Decision Gate** (do not stop):
+After the auditor finishes — **immediately apply Build Verification and Decision Gate** (do not stop):
 1. Read the evaluation JSON
 2. Extract scores and issue lists
-3. Print a ONE-LINE status: "Group N scored X%. [Accepted | Proceeding to fix...]"
-4. Apply the Decision Gate below — spawn the fixer or move to next group **in the same turn**
+3. Run Build & Run Verification (see below)
+4. Apply the Decision Gate — spawn the fixer or move to next group **in the same turn**
+
+### Build & Run Verification
+
+After the auditor scores are in, attempt to **build and run** the ported project. This is
+a hard requirement — code that doesn't compile cannot score 100%, regardless of the auditor's
+assessment.
+
+**Step 1 — Build**: Run the appropriate build command for the target framework:
+
+| Target Framework | Build Command |
+|------------------|---------------|
+| .NET / C# | `dotnet build {PORT_PATH}` |
+| Rust / Cargo | `cargo build --manifest-path {PORT_PATH}/Cargo.toml` |
+| Java / Gradle | `gradle -p {PORT_PATH} compileJava` |
+| Java / Maven | `mvn -f {PORT_PATH}/pom.xml compile` |
+| TypeScript | `cd {PORT_PATH} && npx tsc --noEmit` |
+| Go | `cd {PORT_PATH} && go build ./...` |
+| Python | `python -m py_compile` on each file |
+
+If the target project has no project file yet (e.g., no `.csproj`, `Cargo.toml`, etc.),
+create the minimal project scaffolding needed to build. This is part of the port.
+
+**Step 2 — Capture Results**:
+- If the build **succeeds**: record `build_status: "pass"` in the evaluation
+- If the build **fails**: capture the full compiler error output and record
+  `build_status: "fail"` with `build_errors: [...]` in the evaluation
+
+**Step 3 — Run (if applicable)**:
+If the project has a main entry point or executable target:
+- Attempt to run it (with a short timeout, e.g., 10 seconds)
+- Record whether it starts without crashing (`run_status: "pass" | "fail" | "n/a"`)
+- Capture any runtime errors or crash output
+- For projects without a clear entry point (libraries, etc.), set `run_status: "n/a"`
+
+Build and run results are written to the evaluation JSON alongside auditor scores.
 
 ### Decision Gate
 
@@ -246,10 +283,14 @@ For each file in the group, apply these rules automatically (no user input neede
 
 | Condition | Action |
 |-----------|--------|
-| Score = 100 | **ACCEPT** — file is done, move to next group |
-| Score < 100 | **Immediately** proceed to Phase 3 (Fix) — no retry limit |
+| Auditor score = 100 AND build passes | **ACCEPT** — file is done, move to next group |
+| Auditor score < 100 OR build fails | **Immediately** proceed to Phase 3 (Fix) — no retry limit |
 
-When all groups reach 100%, proceed to Final Report generation.
+A file group cannot be accepted while the project has build errors, even if the auditor
+gave it 100%. Build errors are treated as P0 issues.
+
+When all groups reach 100% AND the project builds and runs successfully, proceed to
+Final Report generation.
 
 ---
 
@@ -275,8 +316,12 @@ Spawn a **pa-fixer** subagent:
 > **Input C — Evaluation report**:
 > {Full contents of the evaluation JSON/markdown}
 >
+> **Input D — Build/Run errors** (if any):
+> {Full compiler error output and/or runtime crash output. If build passed, state "Build: PASS"}
+>
 > **Instructions**: Read `references/porting-phases.md` Phase 3 — Fixer section.
 > Follow those instructions exactly. Fix every issue, P0 first.
+> **Build errors are P0** — fix compilation failures before anything else.
 > Overwrite the ported files in {PORT_PATH} with the corrected versions.
 > Write the changelog to `port-results/<slug>/changelogs/{filename}-changelog-{iteration}.md`.
 >
@@ -296,14 +341,14 @@ After the fixer finishes — **immediately loop back to Phase 2** (do not stop):
 Maintain a running state table. Update after every phase:
 
 ```
-| File           | Iteration | Phase    | Score | P0s | Status       |
-|----------------|-----------|----------|-------|-----|--------------|
-| main.c         | 1         | PORT     | —     | —   | In Progress  |
-| main.c         | 1         | EVALUATE | 72    | 1   | Below Target |
-| main.c         | 1         | FIX      | 72→85 | 0   | Below Target |
-| main.c         | 2         | EVALUATE | 89    | 0   | Below Target |
-| ...            | ...       | ...      | ...   | ... | ...          |
-| main.c         | 5         | EVALUATE | 100   | 0   | Accepted     |
+| File           | Iteration | Phase    | Score | P0s | Build | Status       |
+|----------------|-----------|----------|-------|-----|-------|--------------|
+| main.c         | 1         | PORT     | —     | —   | —     | In Progress  |
+| main.c         | 1         | EVALUATE | 72    | 1   | FAIL  | Below Target |
+| main.c         | 1         | FIX      | 72→85 | 0   | FAIL  | Below Target |
+| main.c         | 2         | EVALUATE | 89    | 0   | PASS  | Below Target |
+| ...            | ...       | ...      | ...   | ... | ...   | ...          |
+| main.c         | 5         | EVALUATE | 100   | 0   | PASS  | Accepted     |
 ```
 
 Print the state table after each phase completes.
@@ -397,6 +442,11 @@ After all files are processed, write `port-results/<slug>/final-report.md`:
 - **Framework**: {TARGET_FRAMEWORK}
 - **Date**: {timestamp}
 
+## Build & Run Status
+- **Build**: {PASS/FAIL} — {build command used}
+- **Run**: {PASS/FAIL/N/A} — {run command used, if applicable}
+- **Build errors resolved**: {count of build errors fixed during iteration}
+
 ## Scorecard
 | File | Final Score | Band | Iterations | Status |
 |------|-------------|------|------------|--------|
@@ -405,7 +455,7 @@ After all files are processed, write `port-results/<slug>/final-report.md`:
 {For each file: iteration-by-iteration score progression}
 
 ## Critical Issues Resolved
-{Most impactful bugs caught and fixed}
+{Most impactful bugs caught and fixed, including build/runtime errors}
 
 ## Cross-File Dependencies
 {Any stubs or // DEPENDENCY comments that need wiring up}
@@ -417,6 +467,8 @@ After all files are processed, write `port-results/<slug>/final-report.md`:
 - Files accepted first pass: {X}
 - Files requiring iteration: {X}
 - Total iterations: {X}
+- Build errors fixed: {X}
+- Final build status: {PASS/FAIL}
 ```
 
 Also regenerate `index.html` with final statistics.
