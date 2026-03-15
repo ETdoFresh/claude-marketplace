@@ -3,7 +3,7 @@ name: port-application
 description: >
   Port, translate, or migrate source code from one programming language to another
   using a structured pipeline: inventory → translate → evaluate → fix, looping until
-  100% accuracy or 10 retries per file. Supports any language pair (C→C#, Python→Rust,
+  100% accuracy. Supports any language pair (C→C#, Python→Rust,
   Java→Kotlin, JavaScript→TypeScript, etc.). Use this skill whenever the user wants to
   port, migrate, translate, convert, or rewrite code from one language to another — even
   if they don't say "port" explicitly. Phrases like "rewrite this in Rust", "convert to
@@ -17,10 +17,27 @@ allowed-tools: Read, Write, Edit, Bash, Glob, Grep, Agent, AskUserQuestion
 
 You are orchestrating a multi-phase porting pipeline that translates source code from
 one programming language to another. The pipeline runs: **Port → Evaluate → Fix → Loop**
-until every file scores 100% or has been retried 10 times.
+until every file scores 100%.
 
 The methodology prioritizes **accuracy over elegance** — an ugly-but-faithful port beats
 a clean-but-wrong one. The original source code is always the single source of truth.
+
+## CRITICAL: Autonomous Execution
+
+This pipeline runs **autonomously to completion**. After Phase 0 (user interview), do NOT
+stop, pause, or ask the user for permission between phases. The full sequence is:
+
+1. Phase 0: Discovery & Configuration (only phase with user interaction)
+2. Phase 1: Port ALL file groups
+3. Phase 2: Evaluate ALL ported files
+4. Phase 3: Fix any files scoring < 100, then loop back to Phase 2
+5. Repeat Phase 2→3 until every file hits 100%
+6. Generate final reports (markdown + HTML)
+
+**Do NOT ask "shall I proceed?" or "should I continue?" between phases.** The pipeline
+is designed to run unattended. If you finish porting, immediately start evaluating. If
+evaluation reveals issues, immediately start fixing. Keep going until every file scores
+100%. There is no retry limit — keep iterating until the file is perfect.
 
 ## Setup
 
@@ -146,10 +163,13 @@ After the porter finishes:
 - Verify the ported files exist at {PORT_PATH}
 - Read the inventory checklist
 - Print a brief summary: files created, function count, confidence levels
+- **Immediately proceed to Phase 2 — do not wait or ask the user**
 
 ---
 
 ## Phase 2 — Evaluate (per file group)
+
+Proceed immediately after Phase 1 completes. Do not pause.
 
 Spawn a **pa-auditor** subagent:
 
@@ -180,17 +200,20 @@ After the auditor finishes:
 
 ### Decision Gate
 
-For each file in the group:
+For each file in the group, apply these rules automatically (no user input needed):
 
 | Condition | Action |
 |-----------|--------|
-| Score = 100 | **ACCEPT** — file is done |
-| Score < 100 AND iterations < 10 | Proceed to Phase 3 (Fix) |
-| Score < 100 AND iterations >= 10 | **STUCK** — flag for human review |
+| Score = 100 | **ACCEPT** — file is done, move to next group |
+| Score < 100 | **Immediately** proceed to Phase 3 (Fix) — no retry limit |
+
+When all groups reach 100%, proceed to Final Report generation.
 
 ---
 
 ## Phase 3 — Fix (per file group, if needed)
+
+Proceed immediately when the decision gate routes here. Do not pause.
 
 Spawn a **pa-fixer** subagent:
 
@@ -221,7 +244,7 @@ After the fixer finishes:
 - Verify the corrected files exist
 - Read the self-audit score
 - Check for recurring issues (same issue in 2+ consecutive iterations)
-- **Loop back to Phase 2** with the corrected files
+- **Immediately loop back to Phase 2** with the corrected files — do not pause or ask
 
 ---
 
@@ -245,9 +268,9 @@ Print the state table after each phase completes.
 ### Recurring Issue Detection
 
 If the same issue appears in two consecutive evaluations with no improvement:
-- Flag it as "Requires Human Review"
-- Continue fixing other issues
-- Include it in the final report
+- Try a different fix approach — re-read the original source for context
+- If still stuck, note it in the iteration report but keep iterating
+- Systematic patterns across files may indicate a translation rule that needs adjusting
 
 ---
 
@@ -341,9 +364,6 @@ After all files are processed, write `port-results/<slug>/final-report.md`:
 ## Critical Issues Resolved
 {Most impactful bugs caught and fixed}
 
-## Requires Human Review
-{Files/issues that could not be resolved automatically}
-
 ## Cross-File Dependencies
 {Any stubs or // DEPENDENCY comments that need wiring up}
 
@@ -353,7 +373,6 @@ After all files are processed, write `port-results/<slug>/final-report.md`:
 - Files accepted (100%): {X}
 - Files accepted first pass: {X}
 - Files requiring iteration: {X}
-- Files stuck (human review): {X}
 - Total iterations: {X}
 ```
 
@@ -376,6 +395,9 @@ For uncommon pairs, generate the mapping by:
 
 ## Important Notes
 
+- **NEVER stop to ask the user between phases.** After Phase 0, the entire pipeline
+  runs autonomously. The only stopping condition is: all files at 100%.
+  Then generate final reports and finish. There is no retry limit.
 - Each subagent runs in its own context. Pass ALL necessary information (file contents,
   config, evaluation reports) directly in the delegation prompt.
 - Use named subagents: **pa-porter**, **pa-auditor**, **pa-fixer**.
@@ -386,7 +408,7 @@ For uncommon pairs, generate the mapping by:
 - Track recurring issues across files — these may indicate a systematic translation
   error that should be fixed as a rule for all remaining files.
 - All output goes to `port-results/<slug>/`.
-- Maximum 10 iterations per file. Target is 100% score.
+- No retry limit. Keep iterating until 100% score.
 - When porting related files (header + implementation), port them together.
 - If a subagent encounters an error, report it and attempt to recover.
 
