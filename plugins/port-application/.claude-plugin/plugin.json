@@ -1,7 +1,7 @@
 {
   "name": "port-application",
   "description": "Port source code from one programming language to another using a structured pipeline: inventory, translate, evaluate, and iteratively fix until 100% accuracy. Supports any language pair.",
-  "version": "1.20260315.171033",
+  "version": "1.20260315.203552",
   "_version_note": "Format: MAJOR.YYYYMMDD.HHMMSS (Central Standard Time). Update on each release using: powershell -Command \"Get-Date -Format 'yyyyMMdd.HHmmss'\" for minor.patch values.",
   "author": { "name": "etgarcia" },
   "keywords": ["port", "translate", "migrate", "language", "code", "conversion", "porting"],

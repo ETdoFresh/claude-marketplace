@@ -79,6 +79,36 @@ phases, you may print brief one-line transition status updates, but you must NEV
 - End your turn without immediately starting the next phase
 - Treat any phase completion as a natural stopping point
 
+### Completion Definition — When You Are Actually Done
+
+The pipeline is complete ONLY when ALL of these are true:
+1. **Every** file group has been evaluated at least once (no unevaluated groups)
+2. **Every** file group has an auditor score of 100
+3. The project **builds** successfully (zero compiler errors)
+4. The project **runs** without crashing (if it has an entry point)
+5. The final report and HTML dashboard have been generated
+
+If ANY of these are false, you are NOT done. Do not generate a final report, do not
+present results, do not mention "remaining work." Instead, keep iterating.
+
+A final report that contains a "Remaining Work" section means you stopped too early.
+There is no such thing as "remaining work" in a completed port — everything is done
+or you are still in the pipeline.
+
+### No Retry Limit — ZERO
+
+There is **no retry limit**. Not 10, not 5, not any number. Keep iterating Evaluate→Fix
+until the score reaches 100 and the build passes. If you find yourself thinking "I've
+tried enough times" or "this is good enough at 95%" — that thought is wrong. Continue.
+
+The only valid reason to stop iterating on a file is: **auditor score = 100 AND build passes**.
+
+Do NOT lower the acceptance threshold. Do NOT accept files below 100 using your own
+judgment. The rubric already accounts for inherent language differences — platform
+replacements are noted but not heavily penalized. A faithful port CAN and MUST reach 100.
+If the auditor keeps scoring below 100 for things you believe are correct translations,
+fix the auditor's concerns anyway — the auditor is the authority, not your intuition.
+
 ## Setup
 
 1. Parse the project description from: `$ARGUMENTS`
@@ -248,7 +278,45 @@ After the auditor scores are in, attempt to **build and run** the ported project
 a hard requirement — code that doesn't compile cannot score 100%, regardless of the auditor's
 assessment.
 
-**Step 1 — Build**: Run the appropriate build command for the target framework:
+#### Project Scaffolding (first build only)
+
+Before the first build attempt, set up the project scaffolding if it doesn't exist:
+- Create the project file (`.csproj`, `Cargo.toml`, `build.gradle`, `tsconfig.json`, etc.)
+- Add required dependencies/packages (e.g., SDL2-CS NuGet, crate dependencies)
+- Ensure all ported files are included in the project
+- Verify import/using statements reference the correct namespaces
+
+This scaffolding is part of the port — do not skip it.
+
+#### Step 1 — Detect and Verify Build Tools
+
+Before running ANY build command, verify the toolchain is available:
+
+```
+# Check what's available — try the preferred tool first, fall back to alternatives
+# Examples:
+dotnet --version    # .NET
+rustc --version     # Rust
+javac --version     # Java
+```
+
+If the preferred build tool is **blocked by the sandbox or not installed**, immediately
+try alternatives rather than reporting failure:
+
+| Target | Preferred | Fallback 1 | Fallback 2 |
+|--------|-----------|------------|------------|
+| .NET / C# | `dotnet build` | `mcs` (Mono) | `csc` |
+| C / C++ | `gcc`/`g++` | `cl.exe` (MSVC via vcvarsall) | `clang` |
+| Rust | `cargo build` | `rustc` directly | — |
+| Java | `gradle` | `mvn compile` | `javac` directly |
+| TypeScript | `npx tsc` | `node --check` (syntax only) | — |
+| Go | `go build` | — | — |
+
+Record which build tool was selected in `request.md` under Build Command.
+
+#### Step 2 — Build
+
+Run the build command. Capture the **full** compiler output (stdout AND stderr).
 
 | Target Framework | Build Command |
 |------------------|---------------|
@@ -259,16 +327,16 @@ assessment.
 | TypeScript | `cd {PORT_PATH} && npx tsc --noEmit` |
 | Go | `cd {PORT_PATH} && go build ./...` |
 | Python | `python -m py_compile` on each file |
+| C / C++ (MSVC) | `cl.exe /c /EHsc *.cpp /I{INCLUDE_PATHS}` then link |
+| C / C++ (GCC) | `g++ -c *.cpp -I{INCLUDE_PATHS}` then link |
 
-If the target project has no project file yet (e.g., no `.csproj`, `Cargo.toml`, etc.),
-create the minimal project scaffolding needed to build. This is part of the port.
-
-**Step 2 — Capture Results**:
+**Capture Results**:
 - If the build **succeeds**: record `build_status: "pass"` in the evaluation
 - If the build **fails**: capture the full compiler error output and record
   `build_status: "fail"` with `build_errors: [...]` in the evaluation
 
-**Step 3 — Run (if applicable)**:
+#### Step 3 — Run (if applicable)
+
 If the project has a main entry point or executable target:
 - Attempt to run it (with a short timeout, e.g., 10 seconds)
 - Record whether it starts without crashing (`run_status: "pass" | "fail" | "n/a"`)
@@ -277,20 +345,48 @@ If the project has a main entry point or executable target:
 
 Build and run results are written to the evaluation JSON alongside auditor scores.
 
-### Decision Gate
+#### Common Build Issues (fix these directly, don't just report them)
 
-For each file in the group, apply these rules automatically (no user input needed):
+These patterns come up repeatedly in ports. When you encounter them, fix them
+inline rather than deferring to the fixer:
+
+| Issue | Cause | Fix |
+|-------|-------|-----|
+| Type redefinition (C2011) | Same type defined in multiple headers | Add include guards or `#pragma once` |
+| Missing forward declarations | Target language is stricter about declaration order | Add forward declarations at top of file |
+| Implicit conversion errors | Target language requires explicit casts | Add explicit casts matching original intent |
+| Wrong include paths | Package manager puts headers in different locations | Check actual installed path, update `#include` |
+| Unresolved symbols (binary data) | Original linked binary blobs (e.g., GAMEPAL.OBJ) | Extract data from original source, embed as arrays |
+| 64-bit pointer truncation | Original used pointer-as-integer tricks on 32-bit | Rewrite to use index-based lookup instead of pointer casts |
+| Uninitialized memory/values | Original relied on DOS memory layout | Explicitly initialize (e.g., set `mainmem = 4*1024*1024L`) |
+| Name collisions | Port introduced names that conflict with stdlib/framework | Rename the port's symbol (add suffix `_t`, prefix, etc.) |
+
+When encountering build errors, **fix them yourself in the orchestrator** if they are
+scaffolding/configuration issues (wrong paths, missing project refs, include guards).
+Only send code-level issues to the pa-fixer subagent.
+
+### Decision Gate — MECHANICAL, NO JUDGMENT
+
+For each file in the group, apply these rules **mechanically** (no user input, no
+judgment calls, no "good enough" exceptions):
 
 | Condition | Action |
 |-----------|--------|
 | Auditor score = 100 AND build passes | **ACCEPT** — file is done, move to next group |
-| Auditor score < 100 OR build fails | **Immediately** proceed to Phase 3 (Fix) — no retry limit |
+| Auditor score < 100 OR build fails | **Immediately** proceed to Phase 3 (Fix) |
+
+**There is no retry limit.** A score of 99 is not accepted. A score of 88 is not
+"close enough." Only 100 AND build passes. Period.
 
 A file group cannot be accepted while the project has build errors, even if the auditor
 gave it 100%. Build errors are treated as P0 issues.
 
-When all groups reach 100% AND the project builds and runs successfully, proceed to
-Final Report generation.
+Do NOT use your own judgment to override this gate. Do NOT accept files because you
+think the remaining issues are "inherent language differences." The auditor rubric
+already accounts for language differences. If the auditor says it's not 100, fix it.
+
+When **every** group is accepted (score = 100, build passes, run passes/n/a), THEN and
+ONLY THEN proceed to Final Report generation. Not before. Not with "remaining work."
 
 ---
 
@@ -357,8 +453,25 @@ Print the state table after each phase completes.
 
 If the same issue appears in two consecutive evaluations with no improvement:
 - Try a different fix approach — re-read the original source for context
-- If still stuck, note it in the iteration report but keep iterating
-- Systematic patterns across files may indicate a translation rule that needs adjusting
+- If still stuck after 3 attempts at the same issue, try fixing it yourself in the
+  orchestrator rather than delegating to the fixer again
+- Systematic patterns across files may indicate a translation rule that needs adjusting —
+  fix the rule and re-apply across all affected files
+
+### Subagent Failure Recovery
+
+Subagents may fail due to rate limits, token limits, tool errors, or sandbox restrictions.
+When this happens:
+
+| Failure | Recovery |
+|---------|----------|
+| Rate limit / throttle | Wait briefly, then retry the same task |
+| Token limit (file too large) | Split the file group — send fewer files per subagent |
+| Tool blocked by sandbox | Try an alternative tool/approach (e.g., different compiler) |
+| Subagent returns incomplete output | Re-read the partial output, then spawn a new subagent to finish |
+| Subagent crashes / no output | Retry once, then attempt the task directly in the orchestrator |
+
+**Never treat a subagent failure as a reason to stop the pipeline.** Recover and continue.
 
 ---
 
@@ -431,7 +544,15 @@ immediately spawn its auditor. This keeps the pipeline flowing.
 
 ## Final Report
 
-After all files are processed, write `port-results/<slug>/final-report.md`:
+**GATE CHECK — Do NOT proceed past this line unless ALL of these are true:**
+- [ ] Every file group has been evaluated (zero unevaluated groups)
+- [ ] Every file group has auditor score = 100
+- [ ] The project builds with zero errors
+- [ ] The project runs without crashing (or run_status = n/a for libraries)
+
+If any box is unchecked, go back to the pipeline. Do not generate this report.
+
+After all files are accepted and verified, write `port-results/<slug>/final-report.md`:
 
 ```markdown
 # Final Port Report: {PORT_PROJECT_NAME}
@@ -492,9 +613,9 @@ For uncommon pairs, generate the mapping by:
 
 - **AUTONOMOUS EXECUTION IS A HARD CONSTRAINT.** After Phase 0, the pipeline runs to
   completion without any user interaction. The ONLY time you present results to the user
-  is after all files score 100% and the final report is generated. If you find yourself
-  about to ask the user a question or present a phase summary, you are violating this
-  constraint — immediately start the next phase instead.
+  is after all files score 100%, the project builds and runs, and the final report is
+  generated. If you find yourself about to ask the user a question or present a phase
+  summary, you are violating this constraint — immediately start the next phase instead.
 - Each subagent runs in its own context. Pass ALL necessary information (file contents,
   config, evaluation reports) directly in the delegation prompt.
 - Use named subagents: **pa-porter**, **pa-auditor**, **pa-fixer**.
@@ -505,10 +626,16 @@ For uncommon pairs, generate the mapping by:
 - Track recurring issues across files — these may indicate a systematic translation
   error that should be fixed as a rule for all remaining files.
 - All output goes to `port-results/<slug>/`.
-- No retry limit. Keep iterating until 100% score.
+- **ZERO retry limit. There is no maximum number of iterations.** Keep iterating
+  until 100% score AND build passes. Not 10 times, not 5 times — no limit.
 - When porting related files (header + implementation), port them together.
-- If a subagent encounters an error, report it and attempt to recover.
-- **REMINDER: Phase completion = immediately start next phase. Not a stopping point.**
+- If a subagent encounters an error, recover and continue (see Subagent Failure Recovery).
+- **Phase completion = immediately start next phase. Not a stopping point.**
+- **Never generate a final report with "Remaining Work."** If there is remaining work,
+  you are not done — keep iterating.
+- **Never accept a file below 100.** Not 98, not 95, not 88. The auditor rubric
+  accounts for language differences. If the auditor says < 100, fix it.
+- **Build success is mandatory.** A port that doesn't compile is not a port.
 
 ## Reference Files
 
