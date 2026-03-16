@@ -57,6 +57,13 @@
       "description": "Port source code from one language to another using a structured pipeline — inventory, translate, evaluate, and iteratively fix until 100% accuracy",
       "category": "orchestration",
       "tags": ["port", "translate", "migrate", "language", "code", "conversion", "porting"]
+    },
+    {
+      "name": "opencode-agent",
+      "source": "./plugins/opencode-agent",
+      "description": "Delegate tasks to an opencode agent — runs opencode as a subprocess to handle tasks with alternative AI models like glm-5-turbo",
+      "category": "skills",
+      "tags": ["opencode", "agent", "delegate", "glm", "alternative-model"]
     }
   ]
 }

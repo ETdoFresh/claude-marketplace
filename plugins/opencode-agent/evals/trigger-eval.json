@@ -1,0 +1,82 @@
+[
+  {
+    "query": "can you launch an opencode agent to refactor my utils.ts file? it's getting pretty messy",
+    "should_trigger": true
+  },
+  {
+    "query": "run opencode to generate unit tests for the auth module in src/auth/",
+    "should_trigger": true
+  },
+  {
+    "query": "i want to use opencode with glm-5-turbo to review my PR changes and suggest improvements",
+    "should_trigger": true
+  },
+  {
+    "query": "delegate this task to opencode: parse the CSV file in data/sales.csv and create a summary report",
+    "should_trigger": true
+  },
+  {
+    "query": "can you use a non-claude model to write a python script that scrapes product prices from this url? i'd like to try opencode for this",
+    "should_trigger": true
+  },
+  {
+    "query": "spawn an opencode agent to fix the failing tests in my project — they're in tests/integration/",
+    "should_trigger": true
+  },
+  {
+    "query": "use opencode to create a new express.js api endpoint for user registration at POST /api/users with email and password validation",
+    "should_trigger": true
+  },
+  {
+    "query": "i want opencode to handle converting my docker-compose.yml from v2 to v3 format, it's at infrastructure/docker-compose.yml",
+    "should_trigger": true
+  },
+  {
+    "query": "run this through glm instead of claude — i need a bash script that monitors disk usage and sends alerts when it hits 90%",
+    "should_trigger": true
+  },
+  {
+    "query": "can you have opencode take a look at my package.json and clean up the unused dependencies?",
+    "should_trigger": true
+  },
+  {
+    "query": "refactor the utils.ts file to use more descriptive variable names and add jsdoc comments",
+    "should_trigger": false
+  },
+  {
+    "query": "can you open my code editor and navigate to the settings page? i need to change the font size",
+    "should_trigger": false
+  },
+  {
+    "query": "write a python script that reads a CSV and generates a bar chart using matplotlib",
+    "should_trigger": false
+  },
+  {
+    "query": "launch an agent to explore my codebase and find all the API endpoints",
+    "should_trigger": false
+  },
+  {
+    "query": "i need to encode this string in base64 — can you help?",
+    "should_trigger": false
+  },
+  {
+    "query": "can you create a new react component for the dashboard? it should show real-time metrics with charts",
+    "should_trigger": false
+  },
+  {
+    "query": "set up a github actions workflow that runs my tests on every PR and deploys to staging on merge to main",
+    "should_trigger": false
+  },
+  {
+    "query": "help me debug this typescript error — Property 'map' does not exist on type 'unknown' in my data processing pipeline",
+    "should_trigger": false
+  },
+  {
+    "query": "i want to use a different coding agent to handle this — can you run cursor on my project?",
+    "should_trigger": false
+  },
+  {
+    "query": "kill the process running on port 3000, it's blocking my dev server from starting",
+    "should_trigger": false
+  }
+]

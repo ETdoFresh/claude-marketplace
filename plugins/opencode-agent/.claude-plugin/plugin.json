@@ -1,0 +1,9 @@
+{
+  "name": "opencode-agent",
+  "description": "Delegate tasks to an opencode agent — runs opencode as a subprocess to handle tasks with alternative AI models like glm-5-turbo.",
+  "version": "1.20260316.084551",
+  "_version_note": "Format: MAJOR.YYYYMMDD.HHMMSS (Central Standard Time). Update on each release using: powershell -Command \"Get-Date -Format 'yyyyMMdd.HHmmss'\" for minor.patch values.",
+  "author": { "name": "etgarcia" },
+  "keywords": ["opencode", "agent", "delegate", "glm", "alternative-model"],
+  "license": "MIT"
+}
