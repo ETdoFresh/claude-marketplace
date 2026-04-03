@@ -29,18 +29,12 @@ Inspect `<command-args>`:
 If `WORKSPACE_DIR` was not provided:
 
 ```bash
-echo "${WORKSPACES_DIR:-$HOME/code/workspaces}/<WORKSPACE_NAME>"
+echo "${WORKSPACES_DIR:-$HOME/code/workspaces}"
 ```
 
 Use the result as `WORKSPACE_DIR`.
 
-### Step 3: Create the Directory if Needed
-
-```bash
-mkdir -p "<WORKSPACE_DIR>"
-```
-
-### Step 4: Generate a Session ID
+### Step 3: Generate a Session ID
 
 ```bash
 python3 -c "import uuid; print(uuid.uuid4())" 2>/dev/null || uuidgen 2>/dev/null || echo "$(date +%s)-$$"
@@ -74,7 +68,7 @@ Resume:    claude --resume <SESSION_ID>
 
 | Command | Behavior |
 |---|---|
-| `/workspace my-project` | Opens tab in `$WORKSPACES_DIR/my-project` (or `~/code/workspaces/my-project`) |
+| `/workspace my-project` | Opens tab in `$WORKSPACES_DIR` (or `~/code/workspaces`), named "my-project" |
 | `/workspace my-project /c/Users/etgarcia/code/CCClaw` | Opens tab in the specified directory |
 
 ---
@@ -82,6 +76,5 @@ Resume:    claude --resume <SESSION_ID>
 ## Notes
 
 - `WORKSPACES_DIR` env var overrides the default root (`~/code/workspaces`).
-- The directory is created with `mkdir -p` if it doesn't exist yet.
 - `--session-id` enables later resume with `claude --resume <SESSION_ID>`.
 - `wt.exe new-tab` is non-blocking — returns immediately after opening the tab.
