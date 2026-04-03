@@ -1,16 +1,18 @@
 ---
 name: workspace
-description: Launch a new Claude Code session as a named workspace. Takes a workspace name and optional working directory. Opens a new Windows Terminal tab running claude --dangerously-skip-permissions --remote-control. Use when the user wants to open or create a named workspace in a new Claude instance.
+description: Launch a new named Claude Code session. The workspace name is only a display label — the working directory is always $WORKSPACES_DIR (default ~/code/workspaces), or the explicitly provided second argument. Never append the name to the path. Use when the user wants to open a new Claude instance with a given name.
 ---
 
 # /workspace
 
-Launch a named Claude Code workspace in a new terminal tab.
+Launch a named Claude Code session in a new terminal tab.
 
 Usage: `/workspace <name> [directory]`
 
-- `name` — display name for the session
-- `directory` — working directory (optional; defaults to `$WORKSPACES_DIR/<name>`, falling back to `~/code/workspaces/<name>`)
+- `name` — session display name only (never used as a path component)
+- `directory` — working directory (optional; defaults to the `WORKSPACES_DIR` env var, or `~/code/workspaces` if unset)
+
+**IMPORTANT: The workspace name is NOT appended to the directory. It is only used as the session title.**
 
 ---
 
@@ -21,18 +23,20 @@ Usage: `/workspace <name> [directory]`
 Inspect `<command-args>`:
 
 - **If empty:** ask the user for a workspace name. **STOP**.
-- **First token** = `WORKSPACE_NAME`
+- **First token** = `WORKSPACE_NAME` (display label only, not a path)
 - **Second token** (if present) = `WORKSPACE_DIR`
 
 ### Step 2: Resolve the Working Directory
 
-If `WORKSPACE_DIR` was not provided:
+If `WORKSPACE_DIR` was **not** provided by the user, run:
 
 ```bash
 echo "${WORKSPACES_DIR:-$HOME/code/workspaces}"
 ```
 
-Use the result as `WORKSPACE_DIR`.
+Use the printed value as `WORKSPACE_DIR`.
+
+**Do NOT append `WORKSPACE_NAME` to this path under any circumstances.**
 
 ### Step 3: Generate a Session ID
 
@@ -42,7 +46,7 @@ python3 -c "import uuid; print(uuid.uuid4())" 2>/dev/null || uuidgen 2>/dev/null
 
 Store as `SESSION_ID`.
 
-### Step 5: Launch the Session
+### Step 4: Launch the Session
 
 ```bash
 wt.exe new-tab --title "<WORKSPACE_NAME>" -d "<WORKSPACE_DIR>" -- bash -c "claude --dangerously-skip-permissions --remote-control --session-id <SESSION_ID> --name '<WORKSPACE_NAME>'"
@@ -53,7 +57,7 @@ wt.exe new-tab --title "<WORKSPACE_NAME>" -d "<WORKSPACE_DIR>" -- bash -c "claud
 2. `cmd.exe /c start "<WORKSPACE_NAME>" bash -c "cd '<WORKSPACE_DIR>' && claude --dangerously-skip-permissions --remote-control --session-id <SESSION_ID> --name '<WORKSPACE_NAME>'"`
 3. If all fail, report the error and print the manual command.
 
-### Step 6: Report to User
+### Step 5: Report to User
 
 ```
 Workspace: <WORKSPACE_NAME>
@@ -66,10 +70,10 @@ Resume:    claude --resume <SESSION_ID>
 
 ## Examples
 
-| Command | Behavior |
+| Command | Result |
 |---|---|
-| `/workspace my-project` | Opens tab in `$WORKSPACES_DIR` (or `~/code/workspaces`), named "my-project" |
-| `/workspace my-project /c/Users/etgarcia/code/CCClaw` | Opens tab in the specified directory |
+| `/workspace hello-world` | Opens tab in `$WORKSPACES_DIR` (e.g. `~/code/workspaces`), named "hello-world" |
+| `/workspace hello-world /c/Users/etgarcia/code/CCClaw` | Opens tab in `CCClaw`, named "hello-world" |
 
 ---
 
