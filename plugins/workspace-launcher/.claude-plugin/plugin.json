@@ -1,0 +1,8 @@
+{
+  "name": "workspace-launcher",
+  "description": "Launch new Claude Code sessions in different working directories — equivalent to the CCY alias with --dangerously-skip-permissions and --remote-control",
+  "version": "1.0.0",
+  "author": { "name": "etgarcia" },
+  "keywords": ["workspace", "launcher", "session", "terminal", "ccy", "remote-control"],
+  "license": "MIT"
+}

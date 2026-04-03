@@ -1,0 +1,8 @@
+{
+  "name": "opus-plan",
+  "description": "Plan using Claude Opus 4.6 — spawns an Opus Plan subagent with ultrathink for maximum reasoning depth",
+  "version": "1.0.0",
+  "author": { "name": "etgarcia" },
+  "keywords": ["plan", "opus", "architecture", "strategy", "reasoning"],
+  "license": "MIT"
+}
