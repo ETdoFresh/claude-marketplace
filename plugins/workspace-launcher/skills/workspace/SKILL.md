@@ -57,12 +57,12 @@ Store as `SESSION_ID`.
 ### Step 4: Launch the Session
 
 ```bash
-wt.exe new-tab --title "<WORKSPACE_NAME>" -d "<WORKSPACE_DIR_WIN>" -- bash -c "claude --dangerously-skip-permissions --remote-control --session-id <SESSION_ID> --name '<WORKSPACE_NAME>'"
+wt.exe new-tab --title "<WORKSPACE_NAME>" -d "<WORKSPACE_DIR_WIN>" -- bash -l -c "/c/Users/etgarcia/.local/bin/claude --dangerously-skip-permissions --remote-control --session-id <SESSION_ID> --name '<WORKSPACE_NAME>'"
 ```
 
 **Fallback chain** if `wt.exe` fails:
-1. `psmux.exe new-window -n "<WORKSPACE_NAME>" -- bash -c "cd '<WORKSPACE_DIR>' && claude --dangerously-skip-permissions --remote-control --session-id <SESSION_ID> --name '<WORKSPACE_NAME>'"`
-2. `cmd.exe /c start "<WORKSPACE_NAME>" bash -c "cd '<WORKSPACE_DIR>' && claude --dangerously-skip-permissions --remote-control --session-id <SESSION_ID> --name '<WORKSPACE_NAME>'"`
+1. `psmux.exe new-window -n "<WORKSPACE_NAME>" -- bash -l -c "cd '<WORKSPACE_DIR>' && /c/Users/etgarcia/.local/bin/claude --dangerously-skip-permissions --remote-control --session-id <SESSION_ID> --name '<WORKSPACE_NAME>'"`
+2. `cmd.exe /c start "<WORKSPACE_NAME>" bash -l -c "cd '<WORKSPACE_DIR>' && /c/Users/etgarcia/.local/bin/claude --dangerously-skip-permissions --remote-control --session-id <SESSION_ID> --name '<WORKSPACE_NAME>'"`
 3. If all fail, report the error and print the manual command.
 
 ### Step 5: Report to User
@@ -88,5 +88,6 @@ Resume:    claude --resume <SESSION_ID>
 ## Notes
 
 - `WORKSPACES_DIR` env var overrides the default root (`~/code/workspace`).
+- `bash -l` (login shell) is required so the shell profile loads and PATH is set. The full path `/c/Users/etgarcia/.local/bin/claude` is also used as a belt-and-suspenders fallback.
 - `--session-id` enables later resume with `claude --resume <SESSION_ID>`.
 - `wt.exe new-tab` is non-blocking — returns immediately after opening the tab.
