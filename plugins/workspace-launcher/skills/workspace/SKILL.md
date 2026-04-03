@@ -1,11 +1,16 @@
 ---
 name: workspace
-description: Launch a new Claude Code session in a different working directory. Opens a new Windows Terminal tab running claude --dangerously-skip-permissions --remote-control (equivalent to the ccy alias). Use when the user wants to open a new Claude instance in another project, spawn a parallel workspace, or dispatch work to a different repo.
+description: Launch a new Claude Code session as a named workspace. Takes a workspace name and optional working directory. Opens a new Windows Terminal tab running claude --dangerously-skip-permissions --remote-control. Use when the user wants to open or create a named workspace in a new Claude instance.
 ---
 
 # /workspace
 
-Launch a new interactive Claude Code session in a separate terminal tab, targeting a different working directory. Mirrors the `ccy` PowerShell alias: `claude --dangerously-skip-permissions --remote-control`.
+Launch a named Claude Code workspace in a new terminal tab.
+
+Usage: `/workspace <name> [directory]`
+
+- `name` — display name for the session
+- `directory` — working directory (optional; defaults to `$WORKSPACES_DIR/<name>`, falling back to `~/code/workspaces/<name>`)
 
 ---
 
@@ -15,78 +20,52 @@ Launch a new interactive Claude Code session in a separate terminal tab, targeti
 
 Inspect `<command-args>`:
 
-**If args are `list` or `ls`:**
-- Run `ls ~/code/` via Bash to list available project directories.
-- Present them as a numbered list.
-- Ask the user which one to open. **STOP**.
+- **If empty:** ask the user for a workspace name. **STOP**.
+- **First token** = `WORKSPACE_NAME`
+- **Second token** (if present) = `WORKSPACE_DIR`
 
-**If args are empty:**
-- Ask: "Which directory? Use `/workspace list` to see available projects, or provide a path or project name."
-- **STOP**.
+### Step 2: Resolve the Working Directory
 
-**Otherwise**, parse the first token as the target:
-- If it starts with `.`, `/`, `~`, or a drive letter (`C:`) → treat as a path directly.
-- If it is a bare name (no slashes) → resolve as `~/code/<name>`.
-- Remaining tokens after the path/name = **initial prompt** (optional).
-
-Normalize the resolved path for Git Bash: convert `C:\...` → `/c/...`, expand `~` to `/c/Users/etgarcia`.
-
-Store: `TARGET_DIR`, `INITIAL_PROMPT` (may be empty).
-
-### Step 2: Validate the Directory
+If `WORKSPACE_DIR` was not provided:
 
 ```bash
-test -d "<TARGET_DIR>" && echo "EXISTS" || echo "NOT_FOUND"
+echo "${WORKSPACES_DIR:-$HOME/code/workspaces}/<WORKSPACE_NAME>"
 ```
 
-If NOT_FOUND: report the error, suggest `/workspace list`, and **STOP**.
+Use the result as `WORKSPACE_DIR`.
 
-### Step 3: Generate Session Identity
+### Step 3: Create the Directory if Needed
+
+```bash
+mkdir -p "<WORKSPACE_DIR>"
+```
+
+### Step 4: Generate a Session ID
 
 ```bash
 python3 -c "import uuid; print(uuid.uuid4())" 2>/dev/null || uuidgen 2>/dev/null || echo "$(date +%s)-$$"
 ```
 
-```bash
-basename "<TARGET_DIR>"
-```
+Store as `SESSION_ID`.
 
-Store as `SESSION_ID` and `SESSION_NAME`.
-
-### Step 4: Launch the Session
-
-Determine mode based on `INITIAL_PROMPT`:
-
-**Mode A — Interactive (no initial prompt):**
+### Step 5: Launch the Session
 
 ```bash
-wt.exe new-tab --title "ccy: <SESSION_NAME>" -d "<TARGET_DIR>" -- bash -c "claude --dangerously-skip-permissions --remote-control --session-id <SESSION_ID> --name '<SESSION_NAME>'"
+wt.exe new-tab --title "<WORKSPACE_NAME>" -d "<WORKSPACE_DIR>" -- bash -c "claude --dangerously-skip-permissions --remote-control --session-id <SESSION_ID> --name '<WORKSPACE_NAME>'"
 ```
 
-**Mode B — Interactive with context (initial prompt provided):**
+**Fallback chain** if `wt.exe` fails:
+1. `psmux.exe new-window -n "<WORKSPACE_NAME>" -- bash -c "cd '<WORKSPACE_DIR>' && claude --dangerously-skip-permissions --remote-control --session-id <SESSION_ID> --name '<WORKSPACE_NAME>'"`
+2. `cmd.exe /c start "<WORKSPACE_NAME>" bash -c "cd '<WORKSPACE_DIR>' && claude --dangerously-skip-permissions --remote-control --session-id <SESSION_ID> --name '<WORKSPACE_NAME>'"`
+3. If all fail, report the error and print the manual command.
 
-```bash
-wt.exe new-tab --title "ccy: <SESSION_NAME>" -d "<TARGET_DIR>" -- bash -c "claude --dangerously-skip-permissions --remote-control --session-id <SESSION_ID> --name '<SESSION_NAME>' --append-system-prompt 'Context from launching session: <INITIAL_PROMPT>'"
-```
-
-**Mode C — Headless (user says "headless", "background", or "dispatch"):**
-
-Run via Bash with `run_in_background: true`:
-```bash
-cd "<TARGET_DIR>" && claude -p "<INITIAL_PROMPT>" --dangerously-skip-permissions --session-id <SESSION_ID> --output-format json 2>&1
-```
-
-**Fallback chain** if `wt.exe` fails (non-zero exit):
-1. Try psmux: `psmux.exe new-window -n "<SESSION_NAME>" -- bash -c "cd '<TARGET_DIR>' && claude --dangerously-skip-permissions --remote-control --session-id <SESSION_ID> --name '<SESSION_NAME>'"`
-2. Try cmd.exe: `cmd.exe /c start "ccy: <SESSION_NAME>" bash -c "cd '<TARGET_DIR>' && claude --dangerously-skip-permissions --remote-control --session-id <SESSION_ID> --name '<SESSION_NAME>'"`
-3. If all fail, report the error and print the manual command the user can run themselves.
-
-### Step 5: Report to User
+### Step 6: Report to User
 
 ```
-Launched: <TARGET_DIR>
-  Session: <SESSION_NAME> (<SESSION_ID>)
-  Resume:  claude --resume <SESSION_ID>
+Workspace: <WORKSPACE_NAME>
+Directory: <WORKSPACE_DIR>
+Session:   <SESSION_ID>
+Resume:    claude --resume <SESSION_ID>
 ```
 
 ---
@@ -95,17 +74,14 @@ Launched: <TARGET_DIR>
 
 | Command | Behavior |
 |---|---|
-| `/workspace CCClaw` | Opens ccy tab in `~/code/CCClaw` |
-| `/workspace ~/code/html-share` | Opens ccy tab at that path |
-| `/workspace list` | Lists dirs under `~/code/` |
-| `/workspace CCClaw Fix the build error in src/index.ts` | Opens tab, context pre-loaded |
-| `/workspace CCClaw headless Run tests and report` | Background dispatch via `claude -p` |
+| `/workspace my-project` | Opens tab in `$WORKSPACES_DIR/my-project` (or `~/code/workspaces/my-project`) |
+| `/workspace my-project /c/Users/etgarcia/code/CCClaw` | Opens tab in the specified directory |
 
 ---
 
 ## Notes
 
-- `--remote-control` is the default in the `ccy` alias. Pass `-nor` equivalent by omitting it only if the user explicitly requests it.
-- `--session-id` lets the user resume the spawned session later with `claude --resume <SESSION_ID>`.
-- `wt.exe new-tab` is non-blocking on Windows — the Bash call returns immediately.
-- Paths passed inside `bash -c "..."` must use Unix-style slashes (`/c/Users/...`).
+- `WORKSPACES_DIR` env var overrides the default root (`~/code/workspaces`).
+- The directory is created with `mkdir -p` if it doesn't exist yet.
+- `--session-id` enables later resume with `claude --resume <SESSION_ID>`.
+- `wt.exe new-tab` is non-blocking — returns immediately after opening the tab.
