@@ -112,7 +112,11 @@ Workspace: <WORKSPACE_NAME>
 Directory: <WORKSPACE_DIR>
 Session:   <SESSION_ID>
 Resume:    claude --resume <SESSION_ID>
-Command:   /workspace "<WORKSPACE_NAME>" <SESSION_ID>
+```
+
+To resume this workspace:
+```
+/workspace "<WORKSPACE_NAME>" <SESSION_ID>
 ```
 
 ---
