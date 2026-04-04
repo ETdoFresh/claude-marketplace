@@ -114,7 +114,7 @@ Session:   <SESSION_ID>
 Resume:    claude --resume <SESSION_ID>
 ```
 
-To resume this workspace:
+To resume this workspace in chat:
 ```
 /workspace "<WORKSPACE_NAME>" <SESSION_ID>
 ```
